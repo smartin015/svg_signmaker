@@ -173,31 +173,27 @@
         }
     }
 
-    // Setup user actions
-    $("input,textarea").on('blur', generateSigns);
-    $("input,textarea").on('keypress', (event) => {
-        if(event.which === 13
-    )
-    {
-        generateSigns();
-    }
-    })
-    ;
-    $("#generate").click(generateSigns);
-    $('#download').click(() => {
-        var serializer = new XMLSerializer();
-    var svgString = serializer.serializeToString(paper.canvas);
-    console.log(svgString);
-    a = document.createElement('a');
-    a.download = 'render.svg';
-    a.type = 'image/svg+xml';
-    blob = new Blob([svgString], {"type": "image/svg+xml"});
-    a.href = (window.URL || webkitURL).createObjectURL(blob);
-    a.click();
-    })
-    ;
-    })
-    ;
+        // Setup user actions
+        $("input,textarea").on('blur', generateSigns);
+        $("input,textarea").on('keypress', (event) => {
+            if (event.which === 13
+            ) {
+                generateSigns();
+            }
+        });
+        $("#generate").click(generateSigns);
+        $('#download').click(() => {
+            var serializer = new XMLSerializer();
+            var svgString = serializer.serializeToString(paper.canvas);
+            console.log(svgString);
+            a = document.createElement('a');
+            a.download = 'render.svg';
+            a.type = 'image/svg+xml';
+            blob = new Blob([svgString], {"type": "image/svg+xml"});
+            a.href = (window.URL || webkitURL).createObjectURL(blob);
+            a.click();
+        });
+    });
 </script>
 </body>
 </html>
