@@ -1,0 +1,199 @@
+<html>
+    <head>
+        <title>Raphael Play</title>
+        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.2.7/raphael.min.js"></script>
+        <script type="text/javascript" src="bebas-neue.font.js"></script>
+        <style type="text/css">
+          #settings {
+            width: auto;
+            padding: 40px;
+            border: 1px black solid;
+            border-radius: 5px;
+            position: relative;
+          }
+          #settings > * {
+            display: block;
+            width: 400px;
+            padding: 5px;
+          }
+          #canvas_container {
+            padding: 20px;
+          }
+          #settings #about {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: auto;
+          }
+          h1, h3 {
+            margin: 0;
+          }
+        </style>
+    </head>
+    <body>
+        <div id="settings">
+          <h1>SVG Laser Example Generator v0.1</h1>
+          <h3>Settings:</h3>
+          <div><label for="width">Total Width (mm):</label><input type="text" name="width" value="400"/></div>
+          <div><label for="height">Total Height (mm):</label><input type="text" name="height" value="400"/></div>
+          <div><label for="fontsize">Font size (mm):</label><input type="text" name="fontsize" value="16"/></div>
+          <div><label for="title">Title:</label><input type="text" name="title" value="Acrylic Laser Settings (Power vs Speed)"/></div>
+          <div><label for="xlabel">X Axis Prefix:</label><input type="text" name="xlabel" value="P"/></div>
+          <div><label for="ylabel">Y Axis Prefix:</label><input type="text" name="ylabel" value="S"/></div>
+          <div><label for="xmin">X min value:</label><input type="text" name="xmin" value="25"/></div>
+          <div><label for="xmax">X max value:</label><input type="text" name="xmax" value="100"/></div>
+          <div><label for="xdiv">X num divisions:</label><input type="text" name="xdiv" value="4"/></div>
+          <div><label for="ymin">Y min value:</label><input type="text" name="ymin" value="10"/></div>
+          <div><label for="ymax">Y max value:</label><input type="text" name="ymax" value="100"/></div>
+          <div><label for="ydiv">Y num divisions:</label><input type="text" name="ydiv" value="10"/></div>
+          <div><label for="padding">Padding (mm):</label><input type="text" name="padding" value="8"/></div>
+          <div><button id="generate">Generate</button><button id="download">Download SVG</button></div>
+          <div id="stats">Click "Generate" or edit a setting to generate signs!</div>
+          <div id="about">
+            Made by <a href="http://fabricate.io" target="_blank">Fabricate.IO</a>, updated December 2017 -
+            <a href="https://github.com/smartin015/svg_signmaker/blob/master/README.md" target="_blank">More Details</a>
+          </div>
+        </div>
+        <div id="canvas_container"></div>
+        <script>
+          $(() => {
+            // Overrides to construct a compound path (engraving negative space on sign)
+            // Credit to StackOverflow user568458
+            // https://stackoverflow.com/questions/18459985/raphael-js-combine-paths
+            Raphael.st.compoundPath = function(){
+                var positions = [];
+                this.forEach( function( element ){
+                    positions.push( element.compoundPath() );
+                });
+                return positions.join('');
+            }
+            Raphael.el.compoundPath = function(){
+                var path = this.attr('path');
+                return path ? Raphael.parsePathString( path ).join('') : '';
+            }
+
+            var paper = new Raphael(document.getElementById('canvas_container'), 0, 0);
+
+            // Global offset from canvas 0,0 for prettyness
+            const x0 = 40;
+            const y0 = 100;
+
+            function generate() {
+              try {
+                const s = {
+                  width: parseInt($('[name="width"]').val(), 10),
+                  height: parseInt($('[name="height"]').val(), 10),
+                  fontSize: parseInt($('[name="fontsize"]').val(), 10),
+                  title: $('[name="title"]').val(),
+                  xLabel: $('[name="xlabel"]').val(),
+                  yLabel: $('[name="ylabel"]').val(),
+                  xMin: parseInt($('[name="xmin"]').val(), 10),
+                  yMin: parseInt($('[name="ymin"]').val(), 10),
+                  xMax: parseInt($('[name="xmax"]').val(), 10),
+                  yMax: parseInt($('[name="ymax"]').val(), 10),
+                  xDiv: parseInt($('[name="xdiv"]').val(), 10),
+                  yDiv: parseInt($('[name="ydiv"]').val(), 10),
+                  rX: parseInt($('[name="rX"]').val(), 10),
+                  rY: parseInt($('[name="rY"]').val(), 10),
+                  padding: parseInt($('[name="padding"]').val(), 10),
+                };
+                paper.clear();
+                paper.setSize((2 * x0 + s.width)+'mm', (2 * y0 + s.height) + 'mm');
+
+                paper.rect(x0, y0, s.width, s.height, 0).attr({stroke: '#666'});
+
+                // Add title and x-axis label
+                const font = paper.getFont('Bebas Neue Bold');
+                const title = paper.print(x0, y0, s.title, font, Math.round(s.fontSize * 1.4));
+                var textbox = title.getBBox();
+                title.translate((s.width - textbox.width) / 2, s.padding + textbox.height);
+                var lowestObjectPx = s.padding + textbox.height;
+
+                // Iterate through the xy grid, generating axis labels, tick labels, and example rectangles
+                const xSpace = s.width - 2 * s.padding;
+                const ySpace = s.height - lowestObjectPx - 2 * s.padding;
+                let gridX0 = x0 - s.padding;
+                let gridY0 = y0 + lowestObjectPx + s.padding;
+
+                function getCenterOffsetFromBase(i, j) {
+                  // split the available space among the division count, and find center points for each column.
+                  // It's helpful to visualize the width as a sum of 2*xDiv pieces, where we
+                  // select the 2i+1 divider for tick i.
+                  // xDiv=1  0-----------1-----------2
+                  // xDiv=2  0-----1-----2-----3-----4
+                  // xDiv=3  0---1---2---3---4---5---6
+                  // Note that we need one extra row and column to xDiv and yDiv for x and y axis tick labels
+                  return [
+                    (xSpace / (2 * (s.xDiv + 1))) * (2 * i + 1),
+                    (ySpace / (2 * (s.yDiv + 1))) * (2 * j + 1),
+                  ];
+                }
+                // Generate Y labels in column 0
+                let maxYTickWidth = 0;
+                let yTickY0 = y0 + lowestObjectPx + s.padding
+
+                // Generate X-axis labels
+                for (let i = 0; i < s.xDiv; i++) {
+                  const pos = getCenterOffsetFromBase(i + 1, 0);
+                  const tickValue = (s.xMin + (s.xMax - s.xMin)/(s.xDiv-1) * i).toFixed(1);
+                  const xTick = paper.print(gridX0, gridY0, s.xLabel + tickValue, font, s.fontSize);
+                  const bbox = xTick.getBBox();
+                  xTick.translate(pos[0] - bbox.width / 2, pos[1]);
+                }
+
+                // Generate Y-axis labels
+                for (let j = 0; j < s.yDiv; j++) {
+                  const pos = getCenterOffsetFromBase(0, j + 1);
+                  const tickValue = (s.yMin + (s.yMax - s.yMin)/(s.yDiv-1) * j).toFixed(1);
+                  const yTick = paper.print(gridX0, gridY0, s.yLabel + tickValue, font, s.fontSize);
+                  const bbox = yTick.getBBox();
+                  yTick.translate(pos[0] + (pos[0] - bbox.width), pos[1]);
+                }
+
+                const wh = getCenterOffsetFromBase(0,0);
+                for(let i = 0; i < s.xDiv; i++) {
+                  for (let j = 0; j < s.yDiv; j++) {
+                    const pos = getCenterOffsetFromBase(i + 1, j + 1);
+                    const fillPos = [Math.floor((256 / s.xDiv) * i), Math.floor((256 / s.yDiv) * j)];
+                    const ex = paper.rect(gridX0, gridY0, wh[0], wh[1], 0).attr({
+                      stroke: 'none',
+                      fill: `rgb(255, ${fillPos[0]}, ${fillPos[1]})`,
+                    });
+                    ex.translate(pos[0] - wh[0]/2, pos[1] - wh[1]/2);
+                  }
+                }
+
+                $("#stats").html(`
+                  <div>Generated!</div>
+                `)
+              } catch(e) {
+                console.error(e);
+                alert(e);
+              }
+            }
+
+            // Setup user actions
+            $("input,textarea").on('blur', generate);
+            $("input,textarea").on('keypress', (event) => {
+              if (event.which === 13) {
+                generate();
+              }
+            });
+            $("#generate").click(generate);
+            $('#download').click(() => {
+              var serializer = new XMLSerializer();
+              var svgString = serializer.serializeToString(paper.canvas);
+              console.log(svgString);
+              a = document.createElement('a');
+              a.download = 'render.svg';
+              a.type = 'image/svg+xml';
+              blob = new Blob([svgString], {"type": "image/svg+xml"});
+              a.href = (window.URL || webkitURL).createObjectURL(blob);
+              a.click();
+            });
+            generate();
+          });
+        </script>
+    </body>
+</html>
