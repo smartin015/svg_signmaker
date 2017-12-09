@@ -1,167 +1,200 @@
 <html>
-    <head>
-        <title>Raphael Play</title>
-        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g=" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.2.7/raphael.min.js"></script>
-        <script type="text/javascript" src="mavenpro.font.js"></script>
-        <style type="text/css">
-          #settings {
+<head>
+    <title>SVG Signmaker</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+            integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.2.7/raphael.min.js"></script>
+    <script type="text/javascript" src="fonts/auto-mission.font.js"></script>
+    <script type="text/javascript" src="fonts/diploma.font.js"></script>
+    <script type="text/javascript" src="fonts/dseg14-classic.font.js"></script>
+    <script type="text/javascript" src="fonts/fresh-script.font.js"></script>
+    <script type="text/javascript" src="fonts/mavenpro.font.js"></script>
+    <script type="text/javascript" src="fonts/monsieur-pomme.font.js"></script>
+    <script type="text/javascript" src="fonts/noel.font.js"></script>
+    <script type="text/javascript" src="fonts/party-balloons.font.js"></script>
+    <script type="text/javascript" src="fonts/whoa.font.js"></script>
+    <script type="text/javascript" src="fonts/xtreem-fat-personal-use.font.js"></script>
+    <!-- <script type="text/javascript" src="fonts/"></script> -->
+    <style type="text/css">
+        #settings {
             width: auto;
             padding: 40px;
             border: 1px black solid;
             border-radius: 5px;
             position: relative;
-          }
-          #settings > * {
+        }
+
+        #settings > * {
             display: block;
             width: 400px;
             padding: 5px;
-          }
-          #canvas_container {
+        }
+
+        #canvas_container {
             padding: 20px;
-          }
-          #settings #about {
+        }
+
+        #settings #about {
             position: absolute;
             bottom: 10px;
             right: 10px;
             width: auto;
-          }
-          h1, h3 {
+        }
+
+        h1, h3 {
             margin: 0;
-          }
-        </style>
-    </head>
-    <body>
-        <div id="settings">
-          <h1>SVG SignMaker v0.1</h1>
-          <h3>Enter comma-separated sign text below:</h3>
-          <textarea id="csv" placeholder="CSV text">BREAD,MILK,EGGS</textarea>
-          <h3>Settings:</h3>
-          <div><label for="padding">Padding (mm):</label><input type="text" name="padding" value="20"/></div>
-          <div><label for="border">Border radius (mm):</label><input type="text" name="border" value="20"/></div>
-          <div><label for="fontsize">Font size (mm):</label><input type="text" name="fontsize" value="48"/></div>
-          <div><label for="fontfamily">Font Family:</label><input name="fontfamily" type="text" value="Maven Pro"/></div>
-          <div><button id="generate">Generate</button><button id="download">Download SVG</button></div>
-          <div id="stats">Click "Generate" or edit a setting to generate signs!</div>
-          <div id="about">
-            Made by <a href="http://fabricate.io" target="_blank">Fabricate.IO</a>, updated December 2017 -
-            <a href="https://github.com/smartin015/svg_signmaker/blob/master/README.md" target="_blank">More Details</a>
-          </div>
-        </div>
-        <div id="canvas_container"></div>
-        <script>
-          $(() => {
-            // Overrides to construct a compound path (engraving negative space on sign)
-            // Credit to StackOverflow user568458
-            // https://stackoverflow.com/questions/18459985/raphael-js-combine-paths
-            Raphael.st.compoundPath = function(){
-                var positions = [];
-                this.forEach( function( element ){
-                    positions.push( element.compoundPath() );
-                });
-                return positions.join('');
-            }
-            Raphael.el.compoundPath = function(){
-                var path = this.attr('path');
-                return path ? Raphael.parsePathString( path ).join('') : '';
-            }
+        }
+    </style>
+</head>
+<body>
+<div id="settings">
+    <h1>SVG SignMaker v0.1</h1>
+    <h3>Enter comma-separated sign text below:</h3>
+    <textarea id="csv" placeholder="CSV text">BREAD,MILK,EGGS</textarea>
+    <h3>Settings:</h3>
+    <div><label for="padding">Padding (mm):</label><input type="text" name="padding" value="20"/></div>
+    <div><label for="border">Border radius (mm):</label><input type="text" name="border" value="20"/></div>
+    <div><label for="fontsize">Font size (mm):</label><input type="text" name="fontsize" value="48"/></div>
+    <div><label for="fontfamily">Font Family:</label>
+        <select name="fontfamily" type="select">
+            <option>Auto Mission</option>
+            <option>Diploma</option>
+            <option>DSEG14 Classic-Bold Italic</option>
+            <option>Fresh Script</option>
+            <option>Maven Pro</option>
+            <option>Monsieur Pomme</option>
+            <option>Noel</option>
+            <option>PartyBalloons</option>
+            <option>whoa</option>
+            <option>Xtreem Thin PERSONAL USE</option>
+            <option>Xtreem Medium PERSONAL USE</option>
+            <option>Xtreem Fat PERSONAL USE</option>
+        </select>
+    </div>
+    <div>
+        <button id="generate">Generate</button>
+        <button id="download">Download SVG</button>
+    </div>
+    <div id="stats">Click "Generate" or edit a setting to generate signs!</div>
+    <div id="about">
+        Made by <a href="http://fabricate.io" target="_blank">Fabricate.IO</a>, updated December 2017 -
+        <a href="https://github.com/smartin015/svg_signmaker/blob/master/README.md" target="_blank">More Details</a>
+    </div>
+</div>
+<div id="canvas_container"></div>
+<script>
+    var paper
+    $(() => {
+        // Overrides to construct a compound path (engraving negative space on sign)
+        // Credit to StackOverflow user568458
+        // https://stackoverflow.com/questions/18459985/raphael-js-combine-paths
+        Raphael.st.compoundPath = function () {
+        var positions = [];
+        this.forEach(function (element) {
+            positions.push(element.compoundPath());
+        });
+        return positions.join('');
+    }
+    Raphael.el.compoundPath = function () {
+        var path = this.attr('path');
+        return path ? Raphael.parsePathString(path).join('') : '';
+    }
 
-            var paper = new Raphael(document.getElementById('canvas_container'), 0, 0);
+    paper = new Raphael(document.getElementById('canvas_container'), 0, 0);
 
-            // Global offset from canvas 0,0 for prettyness
-            const x0 = 40;
-            const y0 = 100;
+    // Global offset from canvas 0,0 for prettyness
+    const x0 = 40;
+    const y0 = 100;
 
-            function createSign(signText, offsY, settings) {
-              // Create a sign at the given Y offset point (From the global offset)
-              const border = settings.border;
-              const padding = settings.padding;
+    function createSign(signText, offsY, settings) {
+        // Create a sign at the given Y offset point (From the global offset)
+        const border = settings.border;
+        const padding = settings.padding;
 
-              // Render font as paths
-              var font1 = paper.getFont(settings.fontFamily);
-              text = paper.print(x0,y0,signText, font1, settings.fontSize);
-              var textbox = text.getBBox();
+        // Render font as paths
+        var font1 = paper.getFont(settings.fontFamily);
+        text = paper.print(x0, y0, signText, font1, settings.fontSize);
+        var textbox = text.getBBox();
 
-              // The rounded rectangle follows a CCW path so SVG fill-rule of nonzero
-              // treats the non-text space as filled.
-              // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fill-rule
-              var rectpath = `
-                M${Math.round(textbox.x-(padding-border))},${Math.round(textbox.y-padding)}
+        // The rounded rectangle follows a CCW path so SVG fill-rule of nonzero
+        // treats the non-text space as filled.
+        // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fill-rule
+        var rectpath = `
+                M${Math.round(textbox.x - (padding - border))},${Math.round(textbox.y - padding)}
                 a${border} ${border} 0 0 0 ${-border} ${border}
-                l0 ${textbox.height+2*(padding-border)}
+                l0 ${textbox.height + 2 * (padding - border)}
                 a${border} ${border} 0 0 0 ${border} ${border}
-                l${textbox.width+2*(padding-border)} 0
+                l${textbox.width + 2 * (padding - border)} 0
                 a${border} ${border} 0 0 0 ${border} ${-border}
-                l0 ${-(textbox.height+2*(padding-border))}
+                l0 ${-(textbox.height + 2 * (padding - border))}
                 a${border} ${border} 0 0 0 ${-border} ${-border}
-                l${-(textbox.width+2*(padding-border))} 0 Z`;
-              var engrave = paper.path(rectpath).attr({fill: "black"});
+                l${-(textbox.width + 2 * (padding - border))} 0 Z`;
+        var engrave = paper.path(rectpath).attr({fill: "black"});
 
-              // Convert text & engrave into a compound path so we get the subtraction of the two.
-              var compound = paper.path(paper.set(text, engrave).compoundPath()).attr({stroke: "none", fill: "red"});
-              text.hide();
-              engrave.hide();
-              compound.transform('T0,'+offsY);
+        // Convert text & engrave into a compound path so we get the subtraction of the two.
+        var compound = paper.path(paper.set(text, engrave).compoundPath()).attr({stroke: "none", fill: "red"});
+        text.hide();
+        engrave.hide();
+        compound.transform('T0,' + offsY);
 
-              // Add a cut line around the rectangle
-              var cut = paper.path(rectpath).attr({stroke: "blue"}).transform('T0,'+offsY);
+        // Add a cut line around the rectangle
+        var cut = paper.path(rectpath).attr({stroke: "blue"}).transform('T0,' + offsY);
+    }
+
+    function generateSigns() {
+        try {
+            const settings = {
+                signs: $("#csv").val().split(','),
+                padding: parseInt($('[name="padding"]').val(), 10),
+                border: parseInt($('[name="border"]').val(), 10),
+                fontSize: parseInt($('[name="fontsize"]').val(), 10),
+                fontFamily: $('[name="fontfamily"]').val()
+            };
+
+            const signHeight = Math.round(2 * settings.padding + settings.fontSize);
+            const spacing = 20 + signHeight;
+            paper.clear();
+
+            const canvasHeight = Math.round(1.1 * spacing * settings.signs.length + 100) + 'mm';
+            console.log(canvasHeight);
+            paper.setSize(Math.round($(window).width()) + 'mm', canvasHeight);
+
+            for (var i = 0; i < settings.signs.length; i++) {
+                const sign = settings.signs[i].trim();
+                createSign(sign, i * spacing, settings);
             }
 
-            function generateSigns() {
-              try {
-                const settings = {
-                  signs: $("#csv").val().split(','),
-                  padding: parseInt($('[name="padding"]').val(), 10),
-                  border: parseInt($('[name="border"]').val(), 10),
-                  fontSize: parseInt($('[name="fontsize"]').val(), 10),
-                  fontFamily: $('[name="fontfamily"]').val(),
-                };
-                if (settings.fontFamily != "Maven Pro") {
-                  throw new Error('Font family must be set to Maven Pro (other fonts are not yet implemented)');
-                }
-
-                const signHeight = Math.round(2*settings.padding + settings.fontSize);
-                const spacing = 20 + signHeight;
-                paper.clear();
-
-                const canvasHeight = Math.round(1.1*spacing*settings.signs.length+100) + 'mm';
-                console.log(canvasHeight);
-                paper.setSize(Math.round($(window).width())+'mm', canvasHeight);
-
-                for (var i = 0; i < settings.signs.length; i++) {
-                  const sign = settings.signs[i].trim();
-                  createSign(sign, i*spacing, settings);
-                }
-
-                $("#stats").html(`
+            $("#stats").html(`
                   <div>Generated ${settings.signs.length} signs</div>
                   <div>Sign heights are ${signHeight}mm</div>
                 `)
-              } catch(e) {
-                alert(e);
-              }
-            }
+        } catch (e) {
+            alert(e);
+        }
+    }
 
-            // Setup user actions
-            $("input,textarea").on('blur', generateSigns);
-            $("input,textarea").on('keypress', (event) => {
-              if (event.which === 13) {
+        // Setup user actions
+        $("input,textarea").on('blur', generateSigns);
+        $("input,textarea").on('keypress', (event) => {
+            if (event.which === 13) {
                 generateSigns();
-              }
-            });
-            $("#generate").click(generateSigns);
-            $('#download').click(() => {
-              var serializer = new XMLSerializer();
-              var svgString = serializer.serializeToString(paper.canvas);
-              console.log(svgString);
-              a = document.createElement('a');
-              a.download = 'render.svg';
-              a.type = 'image/svg+xml';
-              blob = new Blob([svgString], {"type": "image/svg+xml"});
-              a.href = (window.URL || webkitURL).createObjectURL(blob);
-              a.click();
-            });
-          });
-        </script>
-    </body>
+            }
+        });
+        $("#generate").click(generateSigns);
+        $('#download').click(() => {
+            var serializer = new XMLSerializer();
+            var svgString = serializer.serializeToString(paper.canvas);
+            console.log(svgString);
+            a = document.createElement('a');
+            a.download = 'render.svg';
+            a.type = 'image/svg+xml';
+            document.body.appendChild(a);
+            blob = new Blob([svgString], {"type": "image/svg+xml"});
+            a.href = (window.URL || webkitURL).createObjectURL(blob);
+            a.click();
+            document.body.removeChild(a);
+        });
+    });
+</script>
+</body>
 </html>
